@@ -11,6 +11,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Unzip project
+      run: unzip Econ01.zip -d .
     
     - name: set up JDK 17
       uses: actions/setup-java@v4
