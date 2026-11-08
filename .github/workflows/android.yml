@@ -34,9 +34,9 @@ jobs:
         java-version: '21'
         distribution: 'zulu'
 
-    - name: Instalar motor Gradle limpio
+    - name: Instalar motor Gradle 8.4 Compatible
       run: |
-        gradle wrapper --gradle-version 8.5
+        gradle wrapper --gradle-version 8.4
         chmod +x gradlew
 
     - name: Compilar APK sin cache corrupta
