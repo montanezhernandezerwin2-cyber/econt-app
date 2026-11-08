@@ -28,15 +28,15 @@ jobs:
         echo '{}' > google-services.json
         echo '{}' > app/google-services.json
 
-    - name: Configurar Java 17 Compatible
+    - name: Configurar Java 21 Definitivo
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '21'
         distribution: 'zulu'
 
     - name: Instalar motor Gradle limpio
       run: |
-        gradle wrapper --gradle-version 8.2
+        gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
     - name: Compilar APK sin cache corrupta
