@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Buscar y extraer ZIP de la app
+    - name: Extraer proyecto
       run: |
         ZIP_FILE=$(find . -name "*.zip" | head -n 1)
         if [ -n "$ZIP_FILE" ]; then
@@ -20,21 +20,29 @@ jobs:
           cp -r extracted_project/*/* . 2>/dev/null || cp -r extracted_project/* . 2>/dev/null || true
         fi
 
-    - name: Configurar Java 17
+    - name: Crear archivos faltantes
+      run: |
+        touch .env .env.example local.properties
+        mkdir -p app
+        touch app/.env app/.env.example app/local.properties
+        echo '{}' > google-services.json
+        echo '{}' > app/google-services.json
+
+    - name: Configurar Java
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Forzar instalacion de Gradle (Motor de compilacion)
+    - name: Instalar Gradle
       run: |
         gradle wrapper --gradle-version 8.2
         chmod +x gradlew
 
     - name: Compilar APK
-      run: ./gradlew assembleDebug --no-daemon
+      run: ./gradlew assembleDebug --no-daemon -Pandroid.experimental.disableSdkDownload=true
 
-    - name: Descargar App debug
+    - name: Guardar APK
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
