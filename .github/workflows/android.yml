@@ -12,28 +12,42 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Unzip project
-      run: unzip Econ01.zip -d .
+    - name: Buscar y extraer ZIP de la app
+      run: |
+        ZIP_FILE=$(find . -name "*.zip" | head -n 1)
+        if [ -n "$ZIP_FILE" ]; then
+          unzip -q "$ZIP_FILE" -d extracted_project
+          cp -r extracted_project/*/* . 2>/dev/null || cp -r extracted_project/* . 2>/dev/null || true
+        fi
     
-    - name: set up JDK 17
+    - name: Configurar Java 17
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
         cache: gradle
 
-    - name: Grant execute permission for gradlew
+    - name: Permisos de ejecucion
       run: |
-        cd $(find . -maxdepth 2 -name "gradlew" -exec dirname {} \;)
-        chmod +x gradlew
+        GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+        if [ -n "$GRADLEW_PATH" ]; then
+          cd $(dirname "$GRADLEW_PATH")
+          chmod +x gradlew
+        fi
 
-    - name: Build Debug APK
+    - name: Compilar APK
       run: |
-        cd $(find . -maxdepth 2 -name "gradlew" -exec dirname {} \;)
-        ./gradlew assembleDebug --no-daemon
+        GRADLEW_PATH=$(find . -name "gradlew" | head -n 1)
+        if [ -n "$GRADLEW_PATH" ]; then
+          cd $(dirname "$GRADLEW_PATH")
+          ./gradlew assembleDebug --no-daemon
+        else
+          echo "No se encontro el archivo gradlew"
+          exit 1
+        fi
 
-    - name: Upload APK
+    - name: Descargar App debug
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
-        path: "**/build/outputs/apk/debug/app-debug.apk"
+        path: "**/build/outputs/apk/debug/*.apk"
