@@ -12,39 +12,49 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Buscar y extraer ZIP de la app
+    - name: 1. Extraer proyecto de forma limpia
       run: |
         ZIP_FILE=$(find . -name "*.zip" | head -n 1)
         if [ -n "$ZIP_FILE" ]; then
           unzip -q "$ZIP_FILE" -d extracted_project
           cp -r extracted_project/*/* . 2>/dev/null || cp -r extracted_project/* . 2>/dev/null || true
+          rm -rf extracted_project
         fi
 
-    - name: Forzar creacion de archivos de configuracion ausentes
+    - name: 2. Forzar archivos de entorno y parches de compatibilidad
       run: |
         touch .env .env.example local.properties
         mkdir -p app
         touch app/.env app/.env.example app/local.properties
+        echo "sdk.dir=/usr/local/lib/android/sdk" > local.properties
+        echo "sdk.dir=/usr/local/lib/android/sdk" > app/local.properties
         echo '{}' > google-services.json
         echo '{}' > app/google-services.json
 
-    - name: Configurar Java 21 Definitivo
+    - name: 3. Configurar Entorno Java 21 Nativo
       uses: actions/setup-java@v4
       with:
         java-version: '21'
         distribution: 'zulu'
 
-    - name: Instalar motor Gradle 8.4 Compatible
+    - name: 4. Reparar y alinear versiones del Motor Gradle
       run: |
-        gradle wrapper --gradle-version 8.4
+        rm -rf gradle/wrapper/gradle-wrapper.properties
+        mkdir -p gradle/wrapper
+        echo "distributionBase=GRADLE_USER_HOME" > gradle/wrapper/gradle-wrapper.properties
+        echo "distributionPath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+        echo "distributionUrl=https\://services.gradle.org/distributions/gradle-8.4-bin.zip" >> gradle/wrapper/gradle-wrapper.properties
+        echo "zipStoreBase=GRADLE_USER_HOME" >> gradle/wrapper/gradle-wrapper.properties
+        echo "zipStorePath=wrapper/dists" >> gradle/wrapper/gradle-wrapper.properties
+        gradle wrapper --gradle-version 8.4 --distribution-type bin
         chmod +x gradlew
 
-    - name: Compilar APK sin cache corrupta
+    - name: 5. Compilar APK saltando bloqueos de plugins
       run: |
-        export GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8"
-        ./gradlew clean assembleDebug --no-daemon --stacktrace -Pandroid.experimental.disableSdkDownload=true
+        export GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8 -Dorg.gradle.warning.mode=none"
+        ./gradlew assembleDebug --no-daemon --stacktrace -Pandroid.experimental.disableSdkDownload=true
 
-    - name: Descargar App debug
+    - name: 6. Guardar y empaquetar APK Final
       uses: actions/upload-artifact@v4
       with:
         name: app-debug
